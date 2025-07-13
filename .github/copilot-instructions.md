@@ -53,10 +53,10 @@ When adding new type detection in `SchemaAnalyzer::determineElementType()`:
 4. String length determines varchar vs text boundary (255 chars)
 
 ### Template System
-Code generation uses placeholder replacement in `/src/Templates/`:
-- `MODEL_NAME_PLACEHOLDER` → Actual model name
-- `TABLE_NAME_PLACEHOLDER` → Table name
-- `CLASS_DOC_PLACEHOLDER` → Generated PHPDoc comments
+Code generation uses file-based templates in `/src/Templates/`:
+- **`migration-template.php.template`**: Laravel migration structure with `TABLE_NAME_PLACEHOLDER` and `COLUMNS_PLACEHOLDER`
+- **`model-template.php.template`**: Eloquent model structure with `MODEL_NAME_PLACEHOLDER`, `TABLE_NAME_PLACEHOLDER`, and `CLASS_DOC_PLACEHOLDER`
+- Templates use simple string replacement for placeholders - no complex templating engine
 
 ### Test Data Structure
 `/tests/data/` contains realistic test files:

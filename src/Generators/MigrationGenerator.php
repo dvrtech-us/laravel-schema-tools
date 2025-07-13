@@ -15,37 +15,23 @@ class MigrationGenerator
     {
         $className = $className ?? 'Create' . ucfirst($tableName) . 'Table';
 
+        $templatePath = __DIR__ . '/../Templates/migration-template.php.template';
 
-        $template = "<?php
+        if (!file_exists($templatePath)) {
+            throw new \RuntimeException("Migration template file not found: {$templatePath}");
+        }
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+        $template = file_get_contents($templatePath);
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
-        Schema::create('{$tableName}', function (Blueprint \$table) {
-          
-{$this->generateColumns($structure)}
-            \$table->timestamps();
-        });
-    }
+        $columns = $this->generateColumns($structure);
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('{$tableName}');
-    }
-};";
-
-        return $template;
+        return str_replace([
+            'TABLE_NAME_PLACEHOLDER',
+            'COLUMNS_PLACEHOLDER'
+        ], [
+            $tableName,
+            $columns
+        ], $template);
     }
 
     /**
