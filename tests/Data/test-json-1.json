@@ -1,0 +1,66 @@
+[
+    {
+        "name": "Test JSON 1",
+        "version": 1,
+        "description": "This is a test JSON file for validation purposes.",
+        "author": {
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        }
+    },
+    {
+        "name": "Test JSON 1",
+        "version": "1.0.0",
+        "description": "This is a test JSON file for validation purposes.",
+        "author": {
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        }
+    },
+    {
+        "name": "Test JSON 1",
+        "version": "1.0.0.123541",
+        "description": "This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.This is a test JSON file for validation purposes.",
+        "author": {
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        "integer_value": 1234567890,
+        "float_value": 1234567890.1234567890,
+        "boolean_value": true,
+        "null_value": null,
+        "array_value": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "object_value": {
+            "key": "value"
+        }
+    },
+    {
+        "name": "Test JSON 1",
+        "version": 1.123541,
+        "description": "This is a test JSON file for validation purposes.",
+        "author": {
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        "integer_value": 1234567890,
+        "float_value": 1234567890.1234567890,
+        "boolean_value": true,
+        "null_value": null,
+        "array_value": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "object_value": {
+            "key": "value"
+        }
+    }
+]

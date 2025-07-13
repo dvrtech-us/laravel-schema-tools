@@ -1,0 +1,42 @@
+[
+    {
+        "name": "APP_NAME",
+        "value": "My Laravel App",
+        "slotSetting": false
+    },
+    {
+        "name": "APP_ENV",
+        "value": "production",
+        "slotSetting": false
+    },
+    {
+        "name": "APP_DEBUG",
+        "value": "false",
+        "slotSetting": false
+    },
+    {
+        "name": "DATABASE_URL",
+        "value": "mysql://user:password@localhost:3306/mydb",
+        "slotSetting": false
+    },
+    {
+        "name": "REDIS_URL",
+        "value": "redis://localhost:6379",
+        "slotSetting": false
+    },
+    {
+        "name": "API_KEY",
+        "value": "abc123-def456-ghi789",
+        "slotSetting": false
+    },
+    {
+        "name": "MAIL_DRIVER",
+        "value": "smtp",
+        "slotSetting": false
+    },
+    {
+        "name": "SPECIAL_CONFIG",
+        "value": "This has spaces and \"quotes\"",
+        "slotSetting": false
+    }
+]
