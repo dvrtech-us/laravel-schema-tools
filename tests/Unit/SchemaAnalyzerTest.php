@@ -4,6 +4,7 @@ namespace DVRTech\SchemaTools\Tests\Unit;
 
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\DTO\ColumnStructureDTO;
+use DVRTech\SchemaTools\Tests\TestDataHelper;
 use PHPUnit\Framework\TestCase;
 
 class SchemaAnalyzerTest extends TestCase
@@ -163,12 +164,7 @@ class SchemaAnalyzerTest extends TestCase
 
     private function useTestDataJson(string $fileName): array
     {
-        $directory = __DIR__;
-        //go down one level to data directory
-        $directory = dirname($directory) . DIRECTORY_SEPARATOR . 'data';
-
-
-        $filePath =  $directory  . DIRECTORY_SEPARATOR . $fileName;
+        $filePath = TestDataHelper::getTestFilePath($fileName);
         if (!file_exists($filePath)) {
             throw new \RuntimeException("Test data file not found: " . $filePath);
         }
