@@ -5,6 +5,7 @@ namespace DVRTech\SchemaTools\Tests\Unit;
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\Generators\MigrationGenerator;
 use DVRTech\SchemaTools\Generators\ModelGenerator;
+use DVRTech\SchemaTools\Tests\TestDataHelper;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Depends;
 
@@ -23,7 +24,7 @@ class TestJson2IntegrationTest extends TestCase
 
     public function testAnalyzeEnterpriseQuoteJsonFile()
     {
-        $testDataPath = __DIR__ . '/../data/test-json-2.json';
+        $testDataPath = TestDataHelper::getTestFilePath('test-json-2.json');
 
         if (!file_exists($testDataPath)) {
             $this->markTestSkipped('Test data file not found: ' . $testDataPath);
@@ -187,7 +188,7 @@ class TestJson2IntegrationTest extends TestCase
 
     public function testMultipleDatabaseConsistency()
     {
-        $testDataPath = __DIR__ . '/../data/test-json-2.json';
+        $testDataPath = TestDataHelper::getTestFilePath('test-json-2.json');
         $structure = $this->analyzer->analyzeJsonFile($testDataPath);
 
         // Generate SQL for all three databases
@@ -213,7 +214,7 @@ class TestJson2IntegrationTest extends TestCase
 
     public function testEnterpriseQuoteSpecificFields()
     {
-        $testDataPath = __DIR__ . '/../data/test-json-2.json';
+        $testDataPath = TestDataHelper::getTestFilePath('test-json-2.json');
         $structure = $this->analyzer->analyzeJsonFile($testDataPath);
 
         // Test that all the enterprise-specific fields are detected
@@ -254,7 +255,7 @@ class TestJson2IntegrationTest extends TestCase
 
     public function testFieldTypeDetectionAccuracy()
     {
-        $testDataPath = __DIR__ . '/../data/test-json-2.json';
+        $testDataPath = TestDataHelper::getTestFilePath('test-json-2.json');
         $structure = $this->analyzer->analyzeJsonFile($testDataPath);
 
         // Test specific type detection

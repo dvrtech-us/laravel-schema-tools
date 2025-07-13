@@ -3,6 +3,7 @@
 namespace DVRTech\SchemaTools\Tests\Unit;
 
 use DVRTech\SchemaTools\Console\AzureEnvCommand;
+use DVRTech\SchemaTools\Tests\TestDataHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\TestCase;
@@ -179,7 +180,7 @@ ENV;
     public function testConvertExampleEnvFileToAzure()
     {
         // Use the actual example-env.env.txt file from test data
-        $exampleEnvFile = __DIR__ . '/../data/example-env.env.txt';
+        $exampleEnvFile = TestDataHelper::getTestFilePath('example-env.env.txt');
 
         $this->assertTrue(file_exists($exampleEnvFile), 'Example .env file should exist');
 
@@ -253,7 +254,7 @@ ENV;
     public function testConvertExampleAzureFileToEnv()
     {
         // Use the actual example-azure-settings.json file from test data
-        $exampleAzureFile = __DIR__ . '/../data/example-azure-settings.json';
+        $exampleAzureFile = TestDataHelper::getTestFilePath('example-azure-settings.json');
 
         $this->assertTrue(file_exists($exampleAzureFile), 'Example Azure file should exist');
 
@@ -294,7 +295,7 @@ ENV;
     public function testRoundTripConversion()
     {
         // Test that converting .env -> Azure -> .env preserves values
-        $exampleEnvFile = __DIR__ . '/../data/example-env.env.txt';
+        $exampleEnvFile = TestDataHelper::getTestFilePath('example-env.env.txt');
         $tempAzureFile = $this->testDir . '/temp-azure.json';
         $tempEnvFile = $this->testDir . '/temp.env';
 

@@ -4,6 +4,7 @@ namespace DVRTech\SchemaTools\Tests\Unit;
 
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\Generators\MigrationGenerator;
+use DVRTech\SchemaTools\Tests\TestDataHelper;
 use PHPUnit\Framework\TestCase;
 
 class SqlGenerationIntegrationTest extends TestCase
@@ -19,7 +20,7 @@ class SqlGenerationIntegrationTest extends TestCase
 
     public function testSqlGenerationWithRealTestData()
     {
-        $testDataPath = __DIR__ . '/../data/test-json-1.json';
+        $testDataPath = TestDataHelper::getTestFilePath('test-json-1.json');
 
         if (!file_exists($testDataPath)) {
             $this->markTestSkipped('Test data file not found: ' . $testDataPath);
