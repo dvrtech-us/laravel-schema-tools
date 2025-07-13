@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    name: Create Release and Publish Package
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.3
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-8.3-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-interaction --no-progress
+
+    - name: Run tests
+      run: vendor/bin/phpunit
+
+    - name: Run PHPStan
+      run: vendor/bin/phpstan analyse --memory-limit=2G
+
+    - name: Extract tag name
+      id: tag
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get the previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        CURRENT_TAG=${GITHUB_REF#refs/tags/}
+        
+        echo "## What's Changed in $CURRENT_TAG" > changelog.txt
+        echo "" >> changelog.txt
+        
+        if [ -n "$PREV_TAG" ]; then
+          echo "### Commits since $PREV_TAG:" >> changelog.txt
+          git log --pretty=format:"- %s" $PREV_TAG..HEAD >> changelog.txt
+        else
+          echo "### All commits:" >> changelog.txt
+          git log --pretty=format:"- %s" >> changelog.txt
+        fi
+        
+        echo "" >> changelog.txt
+        echo "## Installation" >> changelog.txt
+        echo "" >> changelog.txt
+        echo '```bash' >> changelog.txt
+        echo "composer require dvrtech/schema-tools:$CURRENT_TAG" >> changelog.txt
+        echo '```' >> changelog.txt
+        
+        if [ -n "$PREV_TAG" ]; then
+          echo "" >> changelog.txt
+          echo "**Full Changelog**: https://github.com/dvrtech-us/laravel-schema-tools/compare/$PREV_TAG...$CURRENT_TAG" >> changelog.txt
+        fi
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        release_name: Release ${{ steps.tag.outputs.tag }}
+        body_path: changelog.txt
+        draft: false
+        prerelease: false
+
+    - name: Trigger Packagist Update
+      env:
+        PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+        PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+      run: |
+        if [ -n "$PACKAGIST_USERNAME" ] && [ -n "$PACKAGIST_TOKEN" ]; then
+          echo "Triggering Packagist update for dvrtech/schema-tools..."
+          curl -XPOST -H'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d'{"repository":{"url":"https://github.com/dvrtech-us/laravel-schema-tools"}}'
+          echo "Packagist update triggered successfully!"
+        else
+          echo "⚠️ Packagist credentials not configured in repository secrets."
+          echo "To enable automatic Packagist updates, add PACKAGIST_USERNAME and PACKAGIST_TOKEN secrets."
+        fi
