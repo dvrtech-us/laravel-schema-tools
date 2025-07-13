@@ -118,11 +118,11 @@ class SchemaAnalyzer
                 $type = 'text';
             } else {
                 $type = 'varchar';
-                $length = 255;
+                // Keep actual length instead of defaulting to 255
             }
         } else {
             $type = 'varchar';
-            $length = 255;
+            $length = 0; // Will be adjusted based on actual data
         }
 
         return ['type' => $type, 'length' => $length, 'precision' => $precision];
@@ -140,7 +140,7 @@ class SchemaAnalyzer
     public function determineMostCompatibleType(array $dataArray, ?string $columnName = null): ColumnStructureDTO
     {
         if (empty($dataArray)) {
-            return new ColumnStructureDTO('varchar', 10, null, $columnName);
+            return new ColumnStructureDTO('varchar', 50, null, $columnName);
         }
 
         $typeHierarchy = [
@@ -216,20 +216,20 @@ class SchemaAnalyzer
             // If we encounter a date while we had numeric types, promote to varchar
             if (($mostCompatibleType === 'int' || $mostCompatibleType === 'float') && $currentType === 'date') {
                 $mostCompatibleType = 'varchar';
-                $maxLength = max($maxLength, 10);
+                $maxLength = max($maxLength, 25); // Enough for most date formats
             }
 
             // If we encounter varchar while we had date, promote to varchar
             if ($mostCompatibleType === 'date' && $currentType === 'varchar') {
                 $mostCompatibleType = 'varchar';
-                $maxLength = max($maxLength, 10);
+                $maxLength = max($maxLength, 25); // Enough for most date formats
             }
         }
 
         // If we never processed any values (all were null/empty), default to varchar
         if ($processedValues === 0) {
             $mostCompatibleType = 'varchar';
-            $maxLength = 255;
+            $maxLength = 50; // More reasonable default than 255
         }
 
         // Set appropriate length and precision based on final type
@@ -238,7 +238,8 @@ class SchemaAnalyzer
 
         switch ($mostCompatibleType) {
             case 'varchar':
-                $finalLength = max($maxLength, 255);
+                // Use the maximum length found, with a minimum of 50 and maximum of 255
+                $finalLength = max(min($maxLength, 255), 50);
                 break;
             case 'text':
                 $finalLength = null; // TEXT doesn't need length specification

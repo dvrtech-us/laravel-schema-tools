@@ -125,6 +125,42 @@ class SchemaAnalyzerTest extends TestCase
         $this->assertEquals('json', $structure['object_value']->type);
     }
 
+    public function testDynamicVarcharLength()
+    {
+        // Test minimum length enforcement (50)
+        $shortData = [
+            ['name' => 'Jo'],
+            ['name' => 'Bob'],
+            ['name' => 'Sue']
+        ];
+
+        $result = $this->analyzer->analyzeDataStructure($shortData);
+        $this->assertEquals('varchar', $result['name']->type);
+        $this->assertEquals(50, $result['name']->length); // Should use minimum 50
+
+        // Test actual length tracking
+        $mediumData = [
+            ['description' => 'This is a longer description with more content'],
+            ['description' => 'Short'],
+            ['description' => 'This description has exactly sixty characters in total here!']
+        ];
+
+        $result2 = $this->analyzer->analyzeDataStructure($mediumData);
+        $this->assertEquals('varchar', $result2['description']->type);
+        $this->assertEquals(60, $result2['description']->length); // Should match actual max length
+
+        // Test text promotion for long strings
+        $longString = str_repeat('This is a very long string. ', 10); // >255 chars
+        $longData = [
+            ['content' => $longString],
+            ['content' => 'Short content']
+        ];
+
+        $result3 = $this->analyzer->analyzeDataStructure($longData);
+        $this->assertEquals('text', $result3['content']->type);
+        $this->assertNull($result3['content']->length); // TEXT doesn't have length
+    }
+
     private function useTestDataJson(string $fileName): array
     {
         $directory = __DIR__;

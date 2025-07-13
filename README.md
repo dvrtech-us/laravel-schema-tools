@@ -15,7 +15,7 @@ A Laravel package for analyzing JSON data structures and generating database sch
 Install the package via Composer:
 
 ```bash
-composer require bit/schema-tools-tools
+composer require dvrtech/SchemaTools
 ```
 
 The package will automatically register its service provider.
