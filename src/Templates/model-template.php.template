@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * MODEL_NAME_PLACEHOLDER
+ *
+ * This model represents the TABLE_NAME_PLACEHOLDER table.
+ *
+CLASS_DOC_PLACEHOLDER
+ */
+class MODEL_NAME_PLACEHOLDER extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected \$table = 'TABLE_NAME_PLACEHOLDER';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected \$fillable = [
+    FILLABLE_PLACEHOLDER
+    ];
+
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected \$casts = [
+    CASTS_PLACEHOLDER
+    ];
+}

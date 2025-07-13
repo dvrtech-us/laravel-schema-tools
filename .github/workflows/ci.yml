@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  quick-test:
+    runs-on: ubuntu-latest
+    
+    name: Quick Test (PHP 8.3, Laravel 11)
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.3
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+        coverage: none
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-8.3-
+
+    - name: Install dependencies
+      run: |
+        composer require "laravel/framework:11.*" "orchestra/testbench:9.*" --no-interaction --no-update
+        composer install --prefer-dist --no-interaction --no-progress
+
+    - name: Execute tests
+      run: vendor/bin/phpunit
+
+    - name: Run PHPStan
+      run: vendor/bin/phpstan analyse --memory-limit=2G
+
+  code-style:
+    runs-on: ubuntu-latest
+    
+    name: Code Style Check
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.3
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+        coverage: none
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-code-style-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-code-style-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-interaction --no-progress
+
+    - name: Check if PHP CS Fixer is installed
+      id: check-cs-fixer
+      run: |
+        if composer show friendsofphp/php-cs-fixer > /dev/null 2>&1; then
+          echo "cs_fixer_installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "cs_fixer_installed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run PHP CS Fixer (dry-run)
+      if: steps.check-cs-fixer.outputs.cs_fixer_installed == 'true'
+      run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+    - name: Check if PHP_CodeSniffer is installed
+      id: check-phpcs
+      run: |
+        if composer show squizlabs/php_codesniffer > /dev/null 2>&1; then
+          echo "phpcs_installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "phpcs_installed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run PHP_CodeSniffer
+      if: steps.check-phpcs.outputs.phpcs_installed == 'true'
+      run: vendor/bin/phpcs
+
+    - name: Code style check passed
+      if: steps.check-cs-fixer.outputs.cs_fixer_installed == 'false' && steps.check-phpcs.outputs.phpcs_installed == 'false'
+      run: echo "No code style tools configured - skipping code style checks"
