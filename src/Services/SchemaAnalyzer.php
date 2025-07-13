@@ -4,10 +4,31 @@ namespace DVRTech\SchemaTools\Services;
 
 use DVRTech\SchemaTools\DTO\ColumnStructureDTO;
 
+/**
+ * Service class for analyzing data structures and determining appropriate database schemas.
+ * 
+ * This class provides functionality to analyze various data sources (JSON files, CSV files, 
+ * or raw data arrays) and determine the most appropriate database column types, lengths, 
+ * and precision values. It's used throughout the SchemaTools package for:
+ * 
+ * - Converting JSON/CSV data to database migrations
+ * - Determining optimal column types for Eloquent models
+ * - Supporting the Generate, Migration, and Model console commands
+ * 
+ * The analyzer uses a type hierarchy system to determine the most compatible type
+ * when multiple data types are present in the same column.
+ * 
+ * @package DVRTech\SchemaTools\Services
+ */
 class SchemaAnalyzer
 {
     /**
-     * More restrictive than strtotime to avoid false positives with version strings
+     * Determines if a string value represents a date/time using pattern matching.
+     * More restrictive than strtotime to avoid false positives with version strings.
+     * Used internally by determineElementType() to identify date columns.
+     *
+     * @param string $value The string value to check for date patterns
+     * @return bool True if the value matches common date/time formats, false otherwise
      */
     private function isDateString(string $value): bool
     {
@@ -36,8 +57,13 @@ class SchemaAnalyzer
     }
 
     /**
-     * @param mixed $value
-     * @return array<string, mixed>
+     * Determines the appropriate database column type for a single value.
+     * Analyzes the value type and returns database-specific type information.
+     * Used by determineMostCompatibleType() and throughout the schema analysis process.
+     *
+     * @param mixed $value The value to analyze (can be any PHP type)
+     * @param string|null $columnName Optional column name for context-aware type detection
+     * @return array<string, mixed> Array containing 'type', 'length', and 'precision' keys
      */
     public function determineElementType($value, ?string $columnName = null): array
     {
@@ -103,9 +129,13 @@ class SchemaAnalyzer
     }
 
     /**
-     * Determine the most compatible type for a column based on the data array
+     * Analyzes an array of data to determine the most compatible database column type.
+     * Examines all values in the array and selects the most appropriate type that can
+     * accommodate all values. Used by analyzeDataStructure() for each column.
      * 
-     * @param array<mixed> $dataArray
+     * @param array<mixed> $dataArray Array of values to analyze for type compatibility
+     * @param string|null $columnName Optional column name for context-aware type detection
+     * @return ColumnStructureDTO Object containing the determined type, length, and precision
      */
     public function determineMostCompatibleType(array $dataArray, ?string $columnName = null): ColumnStructureDTO
     {
@@ -229,8 +259,12 @@ class SchemaAnalyzer
     }
 
     /**
-     * @param array<mixed> $dataArray
-     * @return array<string, ColumnStructureDTO>
+     * Analyzes the structure of a multi-dimensional data array to determine database schema.
+     * Main entry point for schema analysis from structured data arrays.
+     * Used by analyzeJsonFile() and analyzeCSVFile() after data parsing.
+     *
+     * @param array<mixed> $dataArray The data array to analyze (can be single or multi-dimensional)
+     * @return array<string, ColumnStructureDTO> Associative array of column names to their ColumnStructureDTO objects
      */
     public function analyzeDataStructure(array $dataArray): array
     {
@@ -275,7 +309,13 @@ class SchemaAnalyzer
     }
 
     /**
-     * @return array<string, ColumnStructureDTO>
+     * Analyzes a JSON file to determine the appropriate database schema structure.
+     * Reads and parses JSON file, then analyzes the structure to determine column types.
+     * Used by console commands and external services for JSON-to-database schema conversion.
+     *
+     * @param string $filePath Path to the JSON file to analyze
+     * @return array<string, ColumnStructureDTO> Associative array of column names to their ColumnStructureDTO objects
+     * @throws \InvalidArgumentException If file doesn't exist or contains invalid JSON
      */
     public function analyzeJsonFile(string $filePath): array
     {
@@ -293,7 +333,14 @@ class SchemaAnalyzer
         return $this->analyzeDataStructure($data);
     }
     /**
-     * @return array<string, ColumnStructureDTO>
+     * Analyzes a CSV file to determine the appropriate database schema structure.
+     * Reads CSV file using the first row as headers, then analyzes data to determine column types.
+     * Used by console commands and external services for CSV-to-database schema conversion.
+     *
+     * @param string $filePath Path to the CSV file to analyze
+     * @param string $delimiter CSV delimiter character (default: comma)
+     * @return array<string, ColumnStructureDTO> Associative array of column names to their ColumnStructureDTO objects
+     * @throws \InvalidArgumentException If file doesn't exist
      */
     public function analyzeCSVFile(string $filePath, string $delimiter = ','): array
     {
