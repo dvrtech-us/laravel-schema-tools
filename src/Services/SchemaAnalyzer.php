@@ -6,12 +6,7 @@ use DVRTech\SchemaTools\DTO\ColumnStructureDTO;
 
 class SchemaAnalyzer
 {
-    /**        $mostCompatibleType = 'boolean';
-        $maxLength = 0;
-        $maxPrecision = 0;
-        $processedValues = 0;  // Track how many non-null values we processed
-
-        foreach ($dataArray as $dataItem) { * Check if a string is a valid date string
+    /**
      * More restrictive than strtotime to avoid false positives with version strings
      */
     private function isDateString(string $value): bool
