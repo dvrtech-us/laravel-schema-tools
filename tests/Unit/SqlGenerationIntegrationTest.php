@@ -122,7 +122,7 @@ class SqlGenerationIntegrationTest extends TestCase
         // Test that different data types are handled correctly
         $this->assertStringContains('`string_field` VARCHAR', $sql);
         $this->assertStringContains('`integer_field` INT', $sql);
-        $this->assertStringContains('`float_field` FLOAT', $sql);
+        $this->assertStringContains('`float_field` DOUBLE', $sql);
         $this->assertStringContains('`large_text` TEXT', $sql);
         $this->assertStringContains('`json_field` JSON', $sql);
 

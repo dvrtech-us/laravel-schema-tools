@@ -137,7 +137,8 @@ class SchemaAnalyzerTest extends TestCase
 
         $result = $this->analyzer->analyzeDataStructure($shortData);
         $this->assertEquals('varchar', $result['name']->type);
-        $this->assertEquals(50, $result['name']->length); // Should use minimum 50
+        $this->assertEquals(3, $result['name']->observedLength);
+        $this->assertEquals(255, $result['name']->length);
 
         // Test actual length tracking
         $mediumData = [
@@ -148,7 +149,8 @@ class SchemaAnalyzerTest extends TestCase
 
         $result2 = $this->analyzer->analyzeDataStructure($mediumData);
         $this->assertEquals('varchar', $result2['description']->type);
-        $this->assertEquals(60, $result2['description']->length); // Should match actual max length
+        $this->assertEquals(60, $result2['description']->observedLength);
+        $this->assertEquals(255, $result2['description']->length);
 
         // Test text promotion for long strings
         $longString = str_repeat('This is a very long string. ', 10); // >255 chars

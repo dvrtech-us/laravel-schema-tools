@@ -99,9 +99,9 @@ class ModelGenerator
     protected function getPhpTypeFromColumnType(string $columnType): string
     {
         return match ($columnType) {
-            'int' => 'int',
+            'int', 'bigint' => 'int',
             'float', 'decimal' => 'float',
-            'date' => 'string',
+            'date', 'datetime', 'time' => 'string',
             'json' => 'array',
             'varchar', 'text' => 'string',
             default => 'mixed'

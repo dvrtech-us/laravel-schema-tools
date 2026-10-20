@@ -48,7 +48,7 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertEquals('int', $structure['quoteNumber']->type);
         $this->assertEquals('varchar', $structure['id']->type);
         $this->assertEquals('float', $structure['grossMargin']->type);
-        $this->assertEquals('date', $structure['createDate']->type);
+        $this->assertEquals('datetime', $structure['createDate']->type);
         $this->assertEquals('int', $structure['isApproved']->type);  // Updated: booleans are now treated as integers
 
         // Test custom fields are detected
@@ -60,6 +60,9 @@ class TestJson2IntegrationTest extends TestCase
         return $structure;
     }
 
+    /**
+     * @depends testAnalyzeEnterpriseQuoteJsonFile
+     */
     #[Depends('testAnalyzeEnterpriseQuoteJsonFile')]
     public function testGenerateMySqlFromEnterpriseQuote(array $structure)
     {
@@ -77,8 +80,8 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringContains('`accountName` VARCHAR(', $sql);
 
         // Test date fields
-        $this->assertStringContains('`createDate` DATE', $sql);
-        $this->assertStringContains('`expectedCloseDate` DATE', $sql);
+        $this->assertStringContains('`createDate` DATETIME(6)', $sql);
+        $this->assertStringContains('`expectedCloseDate` DATETIME(6)', $sql);
 
         // Test custom fields
         $this->assertStringContains('`zCustomQuoteBool1` INT', $sql);  // Updated: booleans are now integers
@@ -93,6 +96,9 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringNotContainsString(',,', $sql);
     }
 
+    /**
+     * @depends testAnalyzeEnterpriseQuoteJsonFile
+     */
     #[Depends('testAnalyzeEnterpriseQuoteJsonFile')]
     public function testGenerateSqlServerFromEnterpriseQuote(array $structure)
     {
@@ -106,13 +112,16 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringContains('[name] NVARCHAR(', $sql);
         $this->assertStringContains('[quoteNumber] INT', $sql);
         $this->assertStringContains('[isApproved] INT', $sql);  // Updated: booleans are now integers
-        $this->assertStringContains('[createDate] DATE', $sql);
+        $this->assertStringContains('[createDate] DATETIME2', $sql);
 
         // Test timestamps with SQL Server format
         $this->assertStringContains('[created_at] DATETIME2 NULL', $sql);
         $this->assertStringContains('[updated_at] DATETIME2 NULL', $sql);
     }
 
+    /**
+     * @depends testAnalyzeEnterpriseQuoteJsonFile
+     */
     #[Depends('testAnalyzeEnterpriseQuoteJsonFile')]
     public function testGeneratePostgreSQLFromEnterpriseQuote(array $structure)
     {
@@ -126,13 +135,16 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringContains('"name" VARCHAR(', $sql);
         $this->assertStringContains('"quoteNumber" INTEGER', $sql);
         $this->assertStringContains('"isApproved" INT', $sql);  // Updated: booleans are now integers
-        $this->assertStringContains('"createDate" DATE', $sql);
+        $this->assertStringContains('"createDate" TIMESTAMP(6)', $sql);
 
         // Test timestamps with PostgreSQL format
         $this->assertStringContains('"created_at" TIMESTAMP NULL', $sql);
         $this->assertStringContains('"updated_at" TIMESTAMP NULL', $sql);
     }
 
+    /**
+     * @depends testAnalyzeEnterpriseQuoteJsonFile
+     */
     #[Depends('testAnalyzeEnterpriseQuoteJsonFile')]
     public function testGenerateMigrationFromEnterpriseQuote(array $structure)
     {
@@ -151,7 +163,7 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringContains("\$table->string('name'", $migration);
         $this->assertStringContains("\$table->integer('quoteNumber')", $migration);
         $this->assertStringContains("\$table->integer('isApproved')", $migration);  // Updated: booleans are now integers
-        $this->assertStringContains("\$table->date('createDate')", $migration);
+        $this->assertStringContains("\$table->dateTime('createDate', 6)", $migration);
         $this->assertStringContains("\$table->decimal('quoteTotal'", $migration);
 
         // Test timestamps
@@ -161,6 +173,9 @@ class TestJson2IntegrationTest extends TestCase
         $this->assertStringContains("Schema::dropIfExists('enterprise_quotes');", $migration);
     }
 
+    /**
+     * @depends testAnalyzeEnterpriseQuoteJsonFile
+     */
     #[Depends('testAnalyzeEnterpriseQuoteJsonFile')]
     public function testGenerateModelFromEnterpriseQuote(array $structure)
     {
@@ -183,7 +198,7 @@ class TestJson2IntegrationTest extends TestCase
         // Test casts for specific types
         $this->assertStringContainsString('protected \\$casts = [', $model);
         $this->assertStringContains("'isApproved' => 'integer',", $model);  // Updated: booleans are now integers
-        $this->assertStringContains("'createDate' => 'date',", $model);
+        $this->assertStringContains("'createDate' => 'datetime',", $model);
     }
 
     public function testMultipleDatabaseConsistency()
@@ -263,7 +278,7 @@ class TestJson2IntegrationTest extends TestCase
             'name' => 'varchar',
             'quoteNumber' => 'int',
             'approvalMargin' => 'float',
-            'createDate' => 'date',
+            'createDate' => 'datetime',
             'isApproved' => 'int',  // Updated: booleans are now treated as integers
             'grossMarginAmount' => 'decimal',
             'approvalComment' => 'varchar',

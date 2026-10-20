@@ -4,6 +4,7 @@ namespace DVRTech\SchemaTools\Console;
 
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\Generators\MigrationGenerator;
+use DVRTech\SchemaTools\Support\AnalysisOptions;
 use Illuminate\Console\Command;
 
 class MigrationCommand extends Command
@@ -13,7 +14,13 @@ class MigrationCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'schema-tools:migration {file : The JSON file to analyze} {table : The table name} {--class= : The migration class name}';
+    protected $signature = 'schema-tools:migration
+        {file : The JSON file to analyze}
+        {table : The table name}
+        {--class= : The migration class name}
+        {--string-columns= : Comma-separated column names forced to varchar}
+        {--decimal-columns= : Comma-separated column names stored as DECIMAL}
+        {--varchar-default= : Minimum varchar length used in SQL}';
 
     /**
      * The console command description.
@@ -40,7 +47,7 @@ class MigrationCommand extends Command
         $migrationGenerator = new MigrationGenerator();
 
         try {
-            $structure = $analyzer->analyzeJsonFile($filePath);
+            $structure = $analyzer->analyzeJsonFile($filePath, AnalysisOptions::fromCommand($this));
             $migration = $migrationGenerator->generateMigration($tableName, $structure, $className);
 
             $timestamp = date('Y_m_d_His');

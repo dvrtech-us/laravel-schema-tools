@@ -4,6 +4,7 @@ namespace DVRTech\SchemaTools;
 
 use DVRTech\SchemaTools\Console\AnalyzeCommand;
 use DVRTech\SchemaTools\Console\AzureEnvCommand;
+use DVRTech\SchemaTools\Console\CreateTableCommand;
 use DVRTech\SchemaTools\Console\MigrationCommand;
 use DVRTech\SchemaTools\Console\ModelCommand;
 use DVRTech\SchemaTools\Console\GenerateCommand;
@@ -20,6 +21,8 @@ class SchemaToolsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->mergeConfigFrom(__DIR__ . '/../config/schema-tools.php', 'schema-tools');
+
         $this->app->singleton(SchemaAnalyzer::class);
         $this->app->singleton(DatabaseSchemaGenerator::class);
         $this->app->singleton(MigrationGenerator::class);
@@ -35,6 +38,7 @@ class SchemaToolsServiceProvider extends ServiceProvider
             $this->commands([
                 AnalyzeCommand::class,
                 AzureEnvCommand::class,
+                CreateTableCommand::class,
                 MigrationCommand::class,
                 ModelCommand::class,
                 GenerateCommand::class,

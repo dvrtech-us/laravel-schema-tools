@@ -84,7 +84,7 @@ class ModelGeneratorTest extends TestCase
         // Test casts
         $this->assertStringContainsString('\'id\' => \'integer\',', $model);
         $this->assertStringContainsString('\'price\' => \'decimal:2\',', $model);
-        $this->assertStringContainsString('\'rating\' => \'decimal:2\',', $model);
+        $this->assertStringContainsString('\'rating\' => \'float\',', $model);
         $this->assertStringContainsString('\'created_at\' => \'date\',', $model);
         $this->assertStringContainsString('\'metadata\' => \'array\',', $model);
 

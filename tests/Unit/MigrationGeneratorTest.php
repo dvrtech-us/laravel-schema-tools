@@ -88,7 +88,7 @@ class MigrationGeneratorTest extends TestCase
         $this->assertStringContains('`description` TEXT', $sql);
         $this->assertStringContains('`created_date` DATE', $sql);
         $this->assertStringContains('`metadata` JSON', $sql);
-        $this->assertStringContains('`rating` FLOAT(2)', $sql);
+        $this->assertStringContains('`rating` DOUBLE', $sql);
     }
 
     public function testGenerateSqlWithEmptyStructure()
