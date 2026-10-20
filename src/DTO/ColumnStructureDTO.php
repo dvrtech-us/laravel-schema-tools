@@ -8,13 +8,32 @@ class ColumnStructureDTO
     public ?int $length;
     public ?int $precision;
     public ?string $columnName;
+    public ?int $integerDigits;
+    public ?int $observedLength;
+    public bool $nullable;
+    public bool $presentInEverySource;
+    public int $fractionalSeconds;
 
-    public function __construct(string $type, ?int $length = null, ?int $precision = null, ?string $columnName = null)
-    {
+    public function __construct(
+        string $type,
+        ?int $length = null,
+        ?int $precision = null,
+        ?string $columnName = null,
+        ?int $integerDigits = null,
+        ?int $observedLength = null,
+        bool $nullable = false,
+        bool $presentInEverySource = true,
+        int $fractionalSeconds = 0
+    ) {
         $this->type = $type;
         $this->length = $length;
         $this->precision = $precision;
         $this->columnName = $columnName;
+        $this->integerDigits = $integerDigits;
+        $this->observedLength = $observedLength;
+        $this->nullable = $nullable;
+        $this->presentInEverySource = $presentInEverySource;
+        $this->fractionalSeconds = $fractionalSeconds;
     }
 
     /**
@@ -26,60 +45,159 @@ class ColumnStructureDTO
             'type' => $this->type,
             'length' => $this->length,
             'precision' => $this->precision,
-            'columnName' => $this->columnName
+            'columnName' => $this->columnName,
+            'integerDigits' => $this->integerDigits,
+            'observedLength' => $this->observedLength,
+            'nullable' => $this->nullable,
+            'presentInEverySource' => $this->presentInEverySource,
+            'fractionalSeconds' => $this->fractionalSeconds,
         ];
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    public function decimalPrecisionAndScale(): array
+    {
+        $scale = $this->precision ?? 2;
+        if ($scale < 0) {
+            $scale = 0;
+        }
+
+        if ($this->integerDigits !== null) {
+            $precision = $this->integerDigits + $scale;
+        } else {
+            $precision = max(10, $scale);
+        }
+
+        if ($precision < $scale) {
+            $precision = $scale;
+        }
+
+        return [$precision, $scale];
     }
 
     public function getSqlDefinition(): string
     {
-        $definition = strtoupper($this->type);
-
         switch ($this->type) {
             case 'varchar':
-                $definition .= '(' . ($this->length ?? 255) . ')';
-                break;
+                return 'VARCHAR(' . ($this->length ?? 255) . ')';
             case 'float':
-                $definition .= '(' . ($this->precision ?? 2) . ')';
-                break;
+                return 'DOUBLE';
             case 'decimal':
-                $definition .= '(10,' . ($this->precision ?? 2) . ')';
-                break;
+                [$precision, $scale] = $this->decimalPrecisionAndScale();
+                return 'DECIMAL(' . $precision . ',' . $scale . ')';
             case 'int':
-                $definition = 'INT';
-                break;
+                return 'INT';
+            case 'bigint':
+                return 'BIGINT';
             case 'text':
-                $definition = 'TEXT';
-                break;
+                return 'TEXT';
             case 'json':
-                $definition = 'JSON';
-                break;
+                return 'JSON';
             case 'date':
-                $definition = 'DATE';
-                break;
+                return 'DATE';
+            case 'datetime':
+                $fraction = min(6, max(0, $this->fractionalSeconds));
+                return $fraction > 0 ? 'DATETIME(' . $fraction . ')' : 'DATETIME';
+            case 'time':
+                return 'TIME';
+            default:
+                return strtoupper($this->type);
         }
+    }
 
-        return $definition;
+    public function getMsSqlTypeDefinition(?string $collation = null): string
+    {
+        switch ($this->type) {
+            case 'varchar':
+                $definition = 'NVARCHAR(' . ($this->length ?? 255) . ')';
+                return $this->withCollation($definition, $collation);
+            case 'text':
+            case 'json':
+                return $this->withCollation('NVARCHAR(MAX)', $collation);
+            case 'int':
+                return 'INT';
+            case 'bigint':
+                return 'BIGINT';
+            case 'float':
+                return 'FLOAT';
+            case 'decimal':
+                [$precision, $scale] = $this->decimalPrecisionAndScale();
+                return 'DECIMAL(' . $precision . ',' . $scale . ')';
+            case 'date':
+                return 'DATE';
+            case 'datetime':
+                return 'DATETIME2';
+            case 'time':
+                return 'TIME';
+            default:
+                return $this->withCollation('NVARCHAR(255)', $collation);
+        }
+    }
+
+    public function getPostgresTypeDefinition(): string
+    {
+        switch ($this->type) {
+            case 'varchar':
+                return 'VARCHAR(' . ($this->length ?? 255) . ')';
+            case 'text':
+                return 'TEXT';
+            case 'int':
+                return 'INTEGER';
+            case 'bigint':
+                return 'BIGINT';
+            case 'float':
+                return 'DOUBLE PRECISION';
+            case 'decimal':
+                [$precision, $scale] = $this->decimalPrecisionAndScale();
+                return 'DECIMAL(' . $precision . ',' . $scale . ')';
+            case 'date':
+                return 'DATE';
+            case 'datetime':
+                $fraction = min(6, max(0, $this->fractionalSeconds));
+                return $fraction > 0 ? 'TIMESTAMP(' . $fraction . ')' : 'TIMESTAMP';
+            case 'time':
+                return 'TIME';
+            case 'json':
+                return 'JSONB';
+            default:
+                return 'VARCHAR(255)';
+        }
     }
 
     public function getLaravelMigrationDefinition(): string
     {
+        $name = $this->columnName ?? 'column';
+
         switch ($this->type) {
             case 'varchar':
-                return "string('{$this->columnName}'" . ($this->length ? ", {$this->length}" : '') . ")";
+                return "string('{$name}'" . ($this->length ? ", {$this->length}" : '') . ")";
             case 'text':
-                return "text('{$this->columnName}')";
+                return "text('{$name}')";
             case 'int':
-                return "integer('{$this->columnName}')";
+                return "integer('{$name}')";
+            case 'bigint':
+                return "bigInteger('{$name}')";
             case 'float':
-                return "float('{$this->columnName}'" . ($this->precision ? ", 8, {$this->precision}" : '') . ")";
+                return "double('{$name}')";
             case 'decimal':
-                return "decimal('{$this->columnName}', 10, " . ($this->precision ?? 2) . ")";
+                [$precision, $scale] = $this->decimalPrecisionAndScale();
+                return "decimal('{$name}', {$precision}, {$scale})";
             case 'date':
-                return "date('{$this->columnName}')";
+                return "date('{$name}')";
+            case 'datetime':
+                $fraction = min(6, max(0, $this->fractionalSeconds));
+                if ($fraction > 0) {
+                    return "dateTime('{$name}', {$fraction})";
+                }
+                return "dateTime('{$name}')";
+            case 'time':
+                return "time('{$name}')";
             case 'json':
-                return "json('{$this->columnName}')";
+                return "json('{$name}')";
             default:
-                return "string('{$this->columnName}')";
+                return "string('{$name}')";
         }
     }
 
@@ -87,12 +205,18 @@ class ColumnStructureDTO
     {
         switch ($this->type) {
             case 'int':
+            case 'bigint':
                 return 'integer';
             case 'float':
+                return 'float';
             case 'decimal':
                 return 'decimal:' . ($this->precision ?? 2);
             case 'date':
                 return 'date';
+            case 'datetime':
+                return 'datetime';
+            case 'time':
+                return null;
             case 'json':
                 return 'array';
             default:
@@ -102,25 +226,57 @@ class ColumnStructureDTO
 
     public function isNumeric(): bool
     {
-        return in_array($this->type, ['int', 'float', 'decimal']);
+        return in_array($this->type, ['int', 'bigint', 'float', 'decimal'], true);
     }
 
     public function isTextual(): bool
     {
-        return in_array($this->type, ['varchar', 'text']);
+        return in_array($this->type, ['varchar', 'text'], true);
     }
 
     public function canAcceptType(string $type): bool
     {
-        $typeHierarchy = [
-            'json' => 10,
-            'text' => 9,
-            'varchar' => 8,
-            'date' => 7,
-            'float' => 6,
-            'int' => 5
-        ];
+        if ($this->type === $type) {
+            return true;
+        }
 
-        return ($typeHierarchy[$this->type] ?? 0) >= ($typeHierarchy[$type] ?? 0);
+        if ($this->type === 'datetime' && $type === 'date') {
+            return true;
+        }
+
+        if ($this->type === 'json') {
+            return true;
+        }
+
+        if ($this->type === 'text' && $type !== 'json') {
+            return true;
+        }
+
+        if ($this->type === 'varchar' && !in_array($type, ['json', 'text'], true)) {
+            return true;
+        }
+
+        if ($this->type === 'decimal' && in_array($type, ['float', 'bigint', 'int'], true)) {
+            return true;
+        }
+
+        if ($this->type === 'float' && $type === 'int') {
+            return true;
+        }
+
+        if ($this->type === 'bigint' && $type === 'int') {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function withCollation(string $definition, ?string $collation): string
+    {
+        if ($collation === null || $collation === '') {
+            return $definition;
+        }
+
+        return $definition . ' COLLATE ' . $collation;
     }
 }

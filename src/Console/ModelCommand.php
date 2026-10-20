@@ -4,6 +4,7 @@ namespace DVRTech\SchemaTools\Console;
 
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\Generators\ModelGenerator;
+use DVRTech\SchemaTools\Support\AnalysisOptions;
 use Illuminate\Console\Command;
 
 class ModelCommand extends Command
@@ -13,7 +14,13 @@ class ModelCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'schema-tools:model {file : The JSON file to analyze} {model : The model name} {--table= : The table name}';
+    protected $signature = 'schema-tools:model
+        {file : The JSON file to analyze}
+        {model : The model name}
+        {--table= : The table name}
+        {--string-columns= : Comma-separated column names forced to varchar}
+        {--decimal-columns= : Comma-separated column names stored as DECIMAL}
+        {--varchar-default= : Minimum varchar length used in SQL}';
 
     /**
      * The console command description.
@@ -40,7 +47,7 @@ class ModelCommand extends Command
         $modelGenerator = new ModelGenerator();
 
         try {
-            $structure = $analyzer->analyzeJsonFile($filePath);
+            $structure = $analyzer->analyzeJsonFile($filePath, AnalysisOptions::fromCommand($this));
             $model = $modelGenerator->generateModel($modelName, $structure, $tableName);
 
             $modelPath = app_path("Models/{$modelName}.php");

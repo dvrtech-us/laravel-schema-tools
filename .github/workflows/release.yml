@@ -1,5 +1,8 @@
 name: Release
 
+env:
+  COMPOSER_NO_BLOCKING: "1"
+
 permissions:
   contents: write
   issues: write
@@ -31,12 +34,12 @@ jobs:
       uses: actions/cache@v3
       with:
         path: vendor
-        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.json') }}
         restore-keys: |
           ${{ runner.os }}-php-8.3-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-interaction --no-progress
+      run: composer update -W --prefer-dist --no-interaction --no-progress
 
     - name: Run tests
       run: vendor/bin/phpunit

@@ -5,6 +5,7 @@ namespace DVRTech\SchemaTools\Console;
 use DVRTech\SchemaTools\Services\SchemaAnalyzer;
 use DVRTech\SchemaTools\Generators\MigrationGenerator;
 use DVRTech\SchemaTools\Generators\ModelGenerator;
+use DVRTech\SchemaTools\Support\AnalysisOptions;
 use Illuminate\Console\Command;
 
 class GenerateCommand extends Command
@@ -14,7 +15,13 @@ class GenerateCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'schema-tools:generate {file : The JSON/CSV file to analyze} {table? : The table name (optional, defaults to filename)} {model? : The model name (optional, defaults to singular table name)}';
+    protected $signature = 'schema-tools:generate
+        {file : The JSON/CSV file to analyze}
+        {table? : The table name (optional, defaults to filename)}
+        {model? : The model name (optional, defaults to singular table name)}
+        {--string-columns= : Comma-separated column names forced to varchar}
+        {--decimal-columns= : Comma-separated column names stored as DECIMAL}
+        {--varchar-default= : Minimum varchar length used in SQL}';
 
     /**
      * The console command description.
@@ -57,12 +64,12 @@ class GenerateCommand extends Command
         $modelGenerator = new ModelGenerator();
 
         try {
-            if (pathinfo($filePath, PATHINFO_EXTENSION) === 'json') {
-                // Analyze JSON file
-                $structure = $analyzer->analyzeJsonFile($filePath);
-            } elseif (pathinfo($filePath, PATHINFO_EXTENSION) === 'csv') {
-                // Analyze CSV file
-                $structure = $analyzer->analyzeCsvFile($filePath);
+            $options = AnalysisOptions::fromCommand($this);
+            $extension = strtolower((string) pathinfo($filePath, PATHINFO_EXTENSION));
+            if ($extension === 'json') {
+                $structure = $analyzer->analyzeJsonFile($filePath, $options);
+            } elseif ($extension === 'csv') {
+                $structure = $analyzer->analyzeCsvFile($filePath, ',', $options);
             } else {
                 $this->error("Unsupported file type: {$filePath}");
                 return 1;

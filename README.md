@@ -9,7 +9,7 @@ A comprehensive Laravel package for analyzing JSON/CSV data structures and autom
 ## 🚀 Features
 
 - **Intelligent Data Analysis**: Automatically analyze JSON and CSV data to determine optimal database column types
-- **Smart Type Detection**: Context-aware type inference with intelligent type hierarchy (`json` > `text` > `varchar` > `date` > `decimal` > `float` > `int`)
+- **Smart Type Detection**: Infers `date`, `datetime`, `time`, `int`, `bigint`, `float`, `decimal`, `varchar`, `text`, and `json`, including CDK fractional timestamps and leading-zero codes
 - **Database Structure Generation**: Generate CREATE TABLE statements for MySQL and SQL Server
 - **Laravel Integration**: Generate Laravel migrations and Eloquent models from raw data
 - **Type Compatibility**: Intelligent type promotion and compatibility checking
@@ -55,15 +55,43 @@ php artisan schema-tools:analyze data.json
 
 # Analyze CSV file with headers
 php artisan schema-tools:analyze customers.csv
+
+# Merge every CSV for one CDK table and print SQL Server types
+php artisan schema-tools:analyze "storage/cdk_files/TechPayroll/*.csv" \
+  --driver=sqlsrv \
+  --string-columns=ronumber,techniciannumber \
+  --varchar-default=255
 ```
+
+`schema-tools:analyze` accepts one or more paths. A path may be a file, a glob, or a comma-separated list. `--driver` is `mysql` or `sqlsrv`. When omitted, the command uses the default connection's driver. The Length column is the longest observed value. The SQL definition uses at least `--varchar-default` (255 unless you change it).
+
+#### SQL Server CREATE TABLE
+```bash
+# Print guarded DDL. This does not connect.
+php artisan schema-tools:create-table "storage/cdk_files/TechPayroll/*.csv" TechPayroll \
+  --schema=C208384 \
+  --primary-key=hostitemid,cora_acct_id \
+  --timestamps \
+  --collation=SQL_Latin1_General_CP1_CI_AS
+
+# Create the table when it is absent
+php artisan schema-tools:create-table "storage/cdk_files/TechPayroll/*.csv" TechPayroll \
+  --schema=C208384 \
+  --primary-key=hostitemid,cora_acct_id \
+  --timestamps \
+  --connection=sqlsrv \
+  --execute
+```
+
+`--execute` runs only on a `sqlsrv` connection. If the table already exists, the command prints missing columns and type mismatches and does not change the database.
 
 #### Migration Generation
 ```bash
-# Generate migration from JSON data
+# Generate a migration from JSON
 php artisan schema-tools:migration data.json users
 
-# Generate migration from CSV data
-php artisan schema-tools:migration customers.csv customers
+# Generate a migration and model from CSV
+php artisan schema-tools:generate customers.csv customers
 ```
 
 #### Model Generation
@@ -107,13 +135,7 @@ Publish the configuration file to customize default settings:
 php artisan vendor:publish --provider="DVRTech\SchemaTools\SchemaToolsServiceProvider"
 ```
 
-The configuration file (`config/schema-tools.php`) allows you to customize:
-
-- **Export Paths**: Default locations for generated migrations and models
-- **Type Mappings**: Custom database type mappings
-- **Naming Conventions**: File and class naming patterns
-
-### Default Configuration
+Publishing writes `config/schema-tools-tools.php`. That path is the one the package reads first. The same keys are also merged as `config/schema-tools.*`, and a published value wins.
 
 ```php
 return [
@@ -121,8 +143,19 @@ return [
         'migrations' => 'database/migrations',
         'models' => 'app/Models',
     ],
+
+    // Always varchar, even when the values look numeric.
+    'string_columns' => [],
+
+    // Always DECIMAL, sized from the data.
+    'decimal_columns' => [],
+
+    // Minimum varchar length emitted in SQL.
+    'varchar_default' => 255,
 ];
 ```
+
+Command options override the config for that run: `--string-columns`, `--decimal-columns`, and `--varchar-default`. The analyzer does not read config itself. Pass the same keys in the `$options` array when you call it from PHP.
 
 ## 🧪 Testing
 
@@ -170,18 +203,19 @@ use DVRTech\SchemaTools\Services\DatabaseSchemaGenerator;
 
 $generator = new DatabaseSchemaGenerator();
 
-// Generate CREATE TABLE SQL
-$createSQL = $generator->generateCreateTableSQL('users', $structure);
-echo $createSQL;
+// MySQL definitions use backticks. Approximate numbers are DOUBLE.
+$createSQL = $generator->generateCreateTableSQL('users', $structure, 'mysql');
 
-// Output example:
-// CREATE TABLE users (
-//     id INT AUTO_INCREMENT PRIMARY KEY,
-//     name VARCHAR(255) NOT NULL,
-//     email VARCHAR(255) NOT NULL,
-//     age INT,
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-// );
+// SQL Server definitions. Pass sqlsrv to the simple generator, or use
+// generateMsSqlCreateTable() for schema, primary key, timestamps, and collation.
+$createSQL = $generator->generateMsSqlCreateTable(
+    'TechPayroll',
+    $structure,
+    'C208384',
+    ['hostitemid', 'cora_acct_id'],
+    true,
+    'SQL_Latin1_General_CP1_CI_AS'
+);
 ```
 
 #### Generate Laravel Migration
@@ -214,28 +248,25 @@ file_put_contents(app_path('Models/User.php'), $model);
 
 ### Type Detection Logic
 
-The package uses intelligent type detection with the following hierarchy:
+Each non-empty value is classified, then the column is promoted. Behavior baselines and the promotion table are in [documentation/features/schema-tools/schema-analysis/baseline.md](documentation/features/schema-tools/schema-analysis/baseline.md).
 
-1. **JSON/Arrays**: Complex data structures → `json` column type
-2. **Text**: Long strings (>255 chars) → `text` column type  
-3. **VARCHAR**: Short strings with dynamic length calculation → `varchar(n)`
-4. **Dates**: Pattern-matched date strings → `date`/`datetime`
-5. **Decimal**: Context-aware numeric detection (price, amount) → `decimal(8,2)`
-6. **Float**: Decimal numbers → `float`
-7. **Integer**: Whole numbers → `int`
+| Observed values | Inferred type | MySQL | SQL Server |
+| --- | --- | --- | --- |
+| `2026-10-19` | `date` | `DATE` | `DATE` |
+| `2026-10-20 09:34:14.51185` | `datetime` | `DATETIME(5)` | `DATETIME2` |
+| `17:26:31`, `09:01:02` | `time` | `TIME` | `TIME` |
+| Date mixed with datetime | `datetime` | `DATETIME(n)` | `DATETIME2` |
+| Any other date/time mix | `varchar` | `VARCHAR(n)` | `NVARCHAR(n)` |
+| Whole numbers inside ±2,147,483,647 | `int` | `INT` | `INT` |
+| Whole numbers inside signed bigint | `bigint` | `BIGINT` | `BIGINT` |
+| Longer digit strings, or a leading zero (`007`, `0123.45`) | `varchar` | `VARCHAR(n)` | `NVARCHAR(n)` |
+| Fractions such as `3.14159` | `float` | `DOUBLE` | `FLOAT` |
+| `amount`, `price`, `total`, `cost`, `gst`, `pst`, `discount`, `decimal`, or `tax` without `rate` | `decimal` | `DECIMAL(p,s)` | `DECIMAL(p,s)` |
+| Bigint mixed with a fraction, or more than 15 integer digits | `decimal` | `DECIMAL(p,s)` | `DECIMAL(p,s)` |
 
-### Context-Aware Type Detection
+`1e5` is numeric only when every value in the column uses scientific notation. `--string-columns` forces varchar. `--decimal-columns` forces `DECIMAL` sized from the largest integer-digit count and the largest scale. `p` above 38 falls back to varchar.
 
-The analyzer uses column name context to make intelligent type decisions:
-
-```php
-// These column names will automatically use decimal type
-$priceColumns = ['price', 'amount', 'cost', 'fee', 'total', 'subtotal'];
-
-// These will use appropriate string lengths
-$emailColumns = ['email']; // varchar(255)
-$nameColumns = ['name', 'title']; // varchar(255)
-```
+Varchar SQL length is `max(observed length, varchar default)`. Strings longer than `min(max(255, varchar default), 4000)` become `text` / `NVARCHAR(MAX)`. Laravel migrations use `double()`, `bigInteger()`, `dateTime()`, and `time()`. The Eloquent cast for `float` is `float`. `time` has no cast.
 
 ## 📊 Data Format Support
 
@@ -292,11 +323,14 @@ APP_DEBUG=false
 
 The package follows a clean architecture pattern:
 
-- **Services Layer**: Core business logic (`SchemaAnalyzer`, `DatabaseSchemaGenerator`)
-- **Generators Layer**: Code generation (`MigrationGenerator`, `ModelGenerator`)  
-- **DTO Pattern**: Structured data representation (`ColumnStructureDTO`)
-- **Console Commands**: Artisan command interface
+- **Services Layer**: `SchemaAnalyzer`, `ColumnStats`, `DatabaseSchemaGenerator`, `SchemaDiff`, `SqlServerTableInspector`
+- **Support**: `AnalysisOptions`, `InputPaths`
+- **Generators Layer**: `MigrationGenerator`, `ModelGenerator`
+- **DTO**: `ColumnStructureDTO`
+- **Console Commands**: `schema-tools:analyze`, `schema-tools:create-table`, `schema-tools:migration`, `schema-tools:model`, `schema-tools:generate`
 - **Template System**: File-based code generation templates
+
+Feature behavior is documented under [documentation/](documentation/README.md).
 
 ## 🤝 Contributing
 

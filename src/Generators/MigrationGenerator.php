@@ -128,26 +128,11 @@ class MigrationGenerator
      */
     private function convertToSqlServerType(ColumnStructureDTO $columnDto): string
     {
-        switch ($columnDto->type) {
-            case 'varchar':
-                return 'NVARCHAR(' . ($columnDto->length ?? 255) . ')';
-            case 'text':
-                return 'NTEXT';
-            case 'int':
-                return 'INT';
-            case 'float':
-                return 'FLOAT(' . ($columnDto->precision ?? 2) . ')';
-            case 'decimal':
-                return 'DECIMAL(10,' . ($columnDto->precision ?? 2) . ')';
-            case 'date':
-                return 'DATE';
-            case 'boolean':
-                return 'BIT';
-            case 'json':
-                return 'NVARCHAR(MAX)'; // SQL Server doesn't have native JSON type in older versions
-            default:
-                return 'NVARCHAR(255)';
+        if ($columnDto->type === 'boolean') {
+            return 'BIT';
         }
+
+        return $columnDto->getMsSqlTypeDefinition();
     }
 
     /**
@@ -155,25 +140,10 @@ class MigrationGenerator
      */
     private function convertToPostgreSQLType(ColumnStructureDTO $columnDto): string
     {
-        switch ($columnDto->type) {
-            case 'varchar':
-                return 'VARCHAR(' . ($columnDto->length ?? 255) . ')';
-            case 'text':
-                return 'TEXT';
-            case 'int':
-                return 'INTEGER';
-            case 'float':
-                return 'REAL';
-            case 'decimal':
-                return 'DECIMAL(10,' . ($columnDto->precision ?? 2) . ')';
-            case 'date':
-                return 'DATE';
-            case 'boolean':
-                return 'BOOLEAN';
-            case 'json':
-                return 'JSONB';
-            default:
-                return 'VARCHAR(255)';
+        if ($columnDto->type === 'boolean') {
+            return 'BOOLEAN';
         }
+
+        return $columnDto->getPostgresTypeDefinition();
     }
 }
