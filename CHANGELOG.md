@@ -35,7 +35,8 @@ Inference changes below alter the types produced for some existing files. Caller
 - Eloquent float casts are `float`. Migrations use `double()`, `bigInteger()`, `dateTime()`, and `time()`.
 - ISO timestamps such as `2024-03-15T14:30:00.000000Z` infer as `datetime`.
 - `schema-tools:generate` treats `.JSON` and `.CSV` the same as lowercase extensions.
-- Larastan `^2.9` is allowed so the PHP 8.1 test matrix can install dev dependencies. PHPStan in CI still uses the locked Larastan 3.
+- Larastan `^2.9` is allowed so the PHP 8.1 jobs can install Larastan 2. The PHP 8.3 PHPStan job resolves Larastan 3.
+- CI resolves dependencies with `composer update` instead of a lock file, and does not let Composer block Laravel 9–11 releases that carry security advisories. The security audit still runs against the resolved tree.
 
 ## [1.0.0] - 2025-01-11
 

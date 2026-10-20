@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  COMPOSER_NO_BLOCKING: "1"
+
 on:
   pull_request:
     branches: [ main, dev ]
@@ -26,14 +29,14 @@ jobs:
       uses: actions/cache@v3
       with:
         path: vendor
-        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.json') }}
         restore-keys: |
           ${{ runner.os }}-php-8.3-
 
     - name: Install dependencies
       run: |
         composer require "laravel/framework:11.*" "orchestra/testbench:9.*" --no-interaction --no-update --dev
-        composer install --prefer-dist --no-interaction --no-progress
+        composer update -W --prefer-dist --no-interaction --no-progress
 
     - name: Execute tests
       run: vendor/bin/phpunit
@@ -62,12 +65,12 @@ jobs:
       uses: actions/cache@v3
       with:
         path: vendor
-        key: ${{ runner.os }}-code-style-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-code-style-${{ hashFiles('**/composer.json') }}
         restore-keys: |
           ${{ runner.os }}-code-style-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-interaction --no-progress
+      run: composer update -W --prefer-dist --no-interaction --no-progress
 
     - name: Check if PHP CS Fixer is installed
       id: check-cs-fixer
